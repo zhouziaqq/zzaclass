@@ -1,0 +1,21 @@
+[build]
+  command = "node tools/prepare-deploy.mjs"
+  publish = "dist"
+
+# 单页站点，任何 404 都交给 404.html（也可以改成重定向回首页）
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"

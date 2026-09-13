@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>肘子大王の课表 · 今天上什么</title>
+<meta name="description" content="从教务系统导出的课表 PDF 生成的课程表网页：默认显示当天课程，可切换整周课表，悬停查看全部信息。">
+<!-- 私人课表页，默认不让搜索引擎收录；想被收录就删掉下面这一行 -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f59e0b">
+<link rel="stylesheet" href="css/style.css">
+<script>
+/* 尽早决定「电脑端 / 手机端」与是否显示欢迎动画，避免首屏闪一下 */
+(function () {
+  var root = document.documentElement;
+  try {
+    var saved = JSON.parse(localStorage.getItem('course-schedule:v1') || '{}');
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (saved.welcome === false || reduced) root.dataset.welcome = 'off';
+
+    var mode = saved.device;
+    if (mode !== 'mobile' && mode !== 'desktop') {
+      var ua = navigator.userAgent || '';
+      var narrow = (window.innerWidth || 1024) <= 820;
+      var uaMobile = /Android|iPhone|iPod|iPad|Windows Phone|Mobile|HarmonyOS|HUAWEI|Xiaomi|Redmi|miui|MicroMessenger/i.test(ua);
+      var coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+      mode = (uaMobile || narrow || (coarse && (window.innerWidth || 1024) <= 1180)) ? 'mobile' : 'desktop';
+    }
+    root.dataset.device = mode;
+  } catch (e) {
+    root.dataset.device = 'desktop';
+  }
+})();
+</script>
+</head>
+<body>
+
+<div id="splash" class="splash" role="dialog" aria-label="欢迎">
+  <div class="splash-inner">
+    <div class="splash-mascot">
+      <span class="splash-crown">👑</span>
+      <span class="splash-face">🍖</span>
+      <span class="splash-ring"></span>
+      <span class="splash-ring splash-ring-2"></span>
+    </div>
+    <h1 class="splash-title" data-text="肘子大王">肘子大王</h1>
+    <p class="splash-sub">の 课 表 · 今天上什么</p>
+    <div class="splash-bar"><span></span></div>
+    <p class="splash-hint">正在唤醒课表…</p>
+    <button type="button" id="splashNever" class="splash-never">以后不再显示欢迎动画</button>
+  </div>
+</div>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="logo" title="肘子大王">🍖<span class="logo-crown">👑</span></div>
+    <div class="brand-text">
+      <h1>肘子大王の课表<span class="dh-badge">肘子大王</span></h1>
+      <p id="metaLine" class="meta-line">加载中…</p>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <div class="view-switch" role="tablist" aria-label="视图切换">
+      <button type="button" data-view="day" class="active" role="tab">今天</button>
+      <button type="button" data-view="week" role="tab">周课表</button>
+    </div>
+    <span id="importBadge" class="badge" hidden>已导入</span>
+    <button type="button" id="btnFormat" class="icon-btn" title="切换课表格式">🎨</button>
+    <button type="button" id="btnDevice" class="icon-btn" title="切换电脑版 / 手机版">📱</button>
+    <button type="button" id="btnAddCourse" class="btn primary">＋ 添加课程</button>
+    <button type="button" id="btnImport" class="btn">导入 PDF</button>
+    <button type="button" id="btnSettings" class="icon-btn" title="设置">⚙️</button>
+    <button type="button" id="btnTheme" class="icon-btn" title="切换主题">🌙</button>
+  </div>
+</header>
+
+<main>
+  <section class="stats">
+    <div class="stat"><span class="stat-num" id="statWeek">—</span><span class="stat-label">当前教学周</span></div>
+    <div class="stat"><span class="stat-num" id="statLessons">0</span><span class="stat-label">课表课次</span></div>
+    <div class="stat"><span class="stat-num" id="statDays">0</span><span class="stat-label">有课天数</span></div>
+    <div class="stat"><span class="stat-num" id="statCustom">0</span><span class="stat-label">自建课程</span></div>
+    <div class="stat"><span class="stat-num" id="termStartEcho">—</span><span class="stat-label">第 1 周周一</span></div>
+  </section>
+
+  <section id="dayView">
+    <div id="dayHero" class="hero"></div>
+    <div id="dayBody" class="day-body"></div>
+  </section>
+
+  <section id="weekView" hidden>
+    <div id="weekHead" class="hero"></div>
+    <div id="weekStrip" class="week-strip" hidden></div>
+    <div id="weekBody" class="day-body"></div>
+    <div class="week-scroll">
+      <div id="weekGrid" class="week-grid"></div>
+      <div id="weekClassic" class="week-classic" hidden></div>
+    </div>
+    <p class="week-tip">提示：鼠标悬停在课程块上可展开全部信息；点击表头的星期可直接跳到当天；点顶部 🎨 或设置里可更换课表格式。</p>
+  </section>
+
+  <div id="othersSlot"></div>
+</main>
+
+<footer class="app-footer">
+  <span>每节 45 分钟 · 课间 10 分钟 · 第 1 节 08:20 · 第 3 节 10:20 · 第 5 节 14:00 · 第 11 节 20:20</span>
+  <span>本站由 <strong>肘子大王 🍖👑</strong> 冠名 · 课表数据来自教务系统导出的 PDF</span>
+</footer>
+
+<nav id="bottomNav" class="bottom-nav" aria-label="底部导航">
+  <button type="button" data-view="day"><span class="nav-ico">📅</span><span class="nav-txt">今天</span></button>
+  <button type="button" data-view="week"><span class="nav-ico">🗓️</span><span class="nav-txt">周课表</span></button>
+  <button type="button" id="navAddCourse"><span class="nav-ico">➕</span><span class="nav-txt">添加课程</span></button>
+  <button type="button" id="navSettings"><span class="nav-ico">⚙️</span><span class="nav-txt">设置</span></button>
+</nav>
+
+<button type="button" id="dhButton" class="dh-fab" title="肘子大王">
+  <span class="dh-fab-face">🍖</span>
+  <span class="dh-fab-crown">👑</span>
+</button>
+
+<input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
+
+<dialog id="settingsDialog" class="settings">
+  <form method="dialog">
+    <h2>设置</h2>
+
+    <label class="field">
+      <span class="field-name">第 1 周周一（开学日）</span>
+      <input type="date" id="termStart">
+      <small>用来计算今天是第几教学周，并按「周数」字段过滤课程。</small>
+    </label>
+    <button type="button" id="btnGuessTerm" class="btn ghost small">按课表打印日期推算</button>
+
+    <label class="field switch">
+      <input type="checkbox" id="showAllWeeks">
+      <span>显示所有周次（不按教学周过滤）</span>
+    </label>
+
+    <div class="field">
+      <span class="field-name">显示格式</span>
+      <label class="field-inline">
+        <span>当天视图</span>
+        <select id="dayFormat">
+          <option value="card">卡片（默认）</option>
+          <option value="compact">紧凑列表</option>
+          <option value="timeline">时间轴</option>
+        </select>
+      </label>
+      <label class="field-inline">
+        <span>周课表</span>
+        <select id="weekFormat">
+          <option value="grid">彩色网格（默认）</option>
+          <option value="classic">经典表格（像打印课表）</option>
+        </select>
+      </label>
+      <small>也可以用顶部的 🎨 按钮在几种格式之间快速轮换。</small>
+    </div>
+
+    <div class="field">
+      <span class="field-name">界面端</span>
+      <label class="field-inline">
+        <span>电脑 / 手机</span>
+        <select id="deviceMode">
+          <option value="auto">自动识别（默认）</option>
+          <option value="desktop">电脑版</option>
+          <option value="mobile">手机版</option>
+        </select>
+      </label>
+      <small>手机版会把导航放到屏幕底部、加大点击区域，课程改为点按展开；顶部 📱/🖥️ 按钮可一键切换。</small>
+    </div>
+
+    <label class="field switch">
+      <input type="checkbox" id="welcomeToggle">
+      <span>开启欢迎动画（肘子大王出场约 1 秒）</span>
+    </label>
+
+    <div class="field">
+      <span class="field-name">自建课程</span>
+      <small id="customEcho">还没有自建课程。可以添加社团、辅导班、固定自习等课表外的安排。</small>
+      <button type="button" id="btnManageCustom" class="btn ghost small">添加 / 管理自建课程</button>
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" id="btnImportDialog" class="btn primary">导入新的课表 PDF</button>
+      <button type="button" id="btnExport" class="btn ghost">导出当前课表 JSON</button>
+      <button type="button" id="btnReset" class="btn ghost">恢复内置课表</button>
+    </div>
+
+    <button id="btnCloseSettings" class="btn close" value="close">关闭</button>
+  </form>
+</dialog>
+
+<dialog id="courseDialog" class="settings course-dialog">
+  <form id="courseForm" method="dialog">
+    <h2 id="courseDialogTitle">添加自建课程</h2>
+
+    <div class="grid2">
+      <label class="field">
+        <span class="field-name">课程名称 *</span>
+        <input id="cName" maxlength="40" placeholder="例如：数学建模讨论" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="field-name">地点</span>
+        <input id="cPlace" maxlength="40" placeholder="例如：笃行2-305" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="field-name">教师</span>
+        <input id="cTeacher" maxlength="40" placeholder="选填" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="field-name">校区</span>
+        <input id="cCampus" maxlength="20" placeholder="选填，如 旗山校区" autocomplete="off">
+      </label>
+    </div>
+
+    <div class="field">
+      <span class="field-name">上课星期（可多选）</span>
+      <div class="day-picker" id="cDays"></div>
+    </div>
+
+    <div class="grid2">
+      <label class="field">
+        <span class="field-name">开始节次</span>
+        <select id="cStart"></select>
+      </label>
+      <label class="field">
+        <span class="field-name">结束节次</span>
+        <select id="cEnd"></select>
+      </label>
+    </div>
+
+    <div class="field">
+      <span class="field-name">加入方式</span>
+      <label class="radio">
+        <input type="radio" name="cMode" value="always" checked>
+        <span>长期加入<small>每周都显示</small></span>
+      </label>
+      <label class="radio">
+        <input type="radio" name="cMode" value="partial">
+        <span>部分时间段加入<small>只在指定周次 / 日期显示</small></span>
+      </label>
+    </div>
+
+    <div id="cPartial" class="partial" hidden>
+      <label class="field">
+        <span class="field-name">教学周次</span>
+        <input id="cWeeks" placeholder="例如 3-8,10（留空表示不限周次）" autocomplete="off">
+      </label>
+      <div class="grid2">
+        <label class="field">
+          <span class="field-name">起始日期</span>
+          <input type="date" id="cFrom">
+        </label>
+        <label class="field">
+          <span class="field-name">结束日期</span>
+          <input type="date" id="cTo">
+        </label>
+      </div>
+      <small>周次与日期填一个就行：填周次按教学周生效，填日期按日期生效，两个都填则同时满足才显示。</small>
+    </div>
+
+    <label class="field">
+      <span class="field-name">备注</span>
+      <input id="cNote" maxlength="60" placeholder="选填" autocomplete="off">
+    </label>
+
+    <div class="dialog-actions">
+      <button type="submit" class="btn primary" id="cSubmit">添加课程</button>
+      <button type="button" class="btn ghost" id="cClear">清空表单</button>
+      <button type="button" class="btn ghost" id="cClose">关闭</button>
+    </div>
+
+    <section class="custom-list">
+      <h3>已添加的自建课程<small id="customCount"></small></h3>
+      <ul id="customList"></ul>
+    </section>
+  </form>
+</dialog>
+
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="js/pdf-parser.js"></script>
+<script src="js/times.js"></script>
+<script src="js/date-utils.js"></script>
+<script src="js/custom-courses.js"></script>
+<script src="js/device.js"></script>
+<script src="js/store.js"></script>
+<script src="data/default-schedule.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

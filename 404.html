@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>页面走丢了 · 肘子大王の课表</title>
+<!-- 样式全部内联：404 页可能在任意路径下被打开，避免相对路径解析出错 -->
+<style>
+  :root {
+    --bg: linear-gradient(160deg, #fef3c7, #fde68a 35%, #fca5a5);
+    --text: #3f2d10;
+    --muted: #92400e;
+    --card: rgba(255, 255, 255, .72);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: linear-gradient(160deg, #1c1508, #3f2d10 40%, #4c1d1d); --text: #fde68a; --muted: #fcd34d; --card: rgba(255, 255, 255, .08); }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
+    color: var(--text); background: var(--bg); text-align: center;
+  }
+  .card { background: var(--card); border-radius: 22px; padding: 32px 28px; box-shadow: 0 20px 50px rgba(120, 53, 15, .22); max-width: 460px; }
+  .face { font-size: 68px; animation: pop 1.6s ease-in-out infinite; }
+  @keyframes pop { 0%, 100% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.08) rotate(3deg); } }
+  h1 { font-size: clamp(22px, 5vw, 30px); margin: 10px 0 8px; }
+  p { color: var(--muted); line-height: 1.7; margin: 0 0 20px; font-size: 14px; }
+  a.btn {
+    display: inline-block; padding: 11px 20px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px;
+    color: #7c2d12; background: linear-gradient(135deg, #fde68a, #fbbf24); box-shadow: 0 10px 24px rgba(245, 158, 11, .35);
+  }
+  a.link { display: block; margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="face">🍖</div>
+  <h1>肘子大王找不到这一页</h1>
+  <p>可能是链接写错了，或者这个地址下面没有文件。</p>
+  <a class="btn" href="/index.html">回到我的课表</a>
+  <a class="link" href="javascript:history.length > 1 &amp;&amp; history.back()">或者返回上一页</a>
+</div>
+</body>
+</html>

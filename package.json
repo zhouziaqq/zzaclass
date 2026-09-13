@@ -1,0 +1,16 @@
+{
+  "name": "course-schedule",
+  "version": "1.0.0",
+  "private": true,
+  "description": "肘子大王の课表 —— 把教务系统导出的课表 PDF 变成可视化课表网页（纯静态，可直接托管）",
+  "scripts": {
+    "dev": "node tools/serve.mjs . 8080 --no-cache",
+    "build": "node tools/prepare-deploy.mjs",
+    "preview": "node tools/serve.mjs dist 8080",
+    "test": "node tools/selftest.mjs",
+    "data": "node tools/build-data.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
